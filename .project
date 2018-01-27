@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<projectDescription>
+	<name>Team6002PoweredUp</name>
+	<comment></comment>
+	<projects>
+	</projects>
+	<buildSpec>
+		<buildCommand>
+			<name>org.eclipse.jdt.core.javabuilder</name>
+			<arguments>
+			</arguments>
+		</buildCommand>
+	</buildSpec>
+	<natures>
+		<nature>org.eclipse.jdt.core.javanature</nature>
+		<nature>edu.wpi.first.wpilib.plugins.core.nature.FRCProjectNature</nature>
+	</natures>
+	<variableList>
+		<variable>
+			<name>JSON</name>
+			<value>file:/C:/Users/FRC6002/eclipse-workspace/Team6002PoweredUp/bin/org/usfirst/frc/team6002/robot/json-simple-1.1.1.jar</value>
+		</variable>
+	</variableList>
+</projectDescription>
