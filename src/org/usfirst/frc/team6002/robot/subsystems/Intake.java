@@ -6,6 +6,7 @@ import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 
+import edu.wpi.first.wpilibj.Solenoid;
 import edu.wpi.first.wpilibj.command.Subsystem;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
@@ -23,41 +24,59 @@ public class Intake extends Subsystem {
     }
     
     //Hardware
-	private TalonSRX mMasterIntake, mSlaveIntake;
+	private TalonSRX mLeftIntake, mRightIntake;
+	private Solenoid mIntakeSolenoid;
 	//Variables
-	boolean IsIntakeOn = false;
-	private static double INTAKE_ON = 1;
-	private static double INTAKE_REVERSE = -1;
+	boolean IsIntakeOn, IsIntakeExtended;
+	private double INTAKE_ON = 0.5;
+	private double INTAKE_REVERSE = -0.5;
 	
-	public void init() {
-		mMasterIntake = new TalonSRX(Constants.kMasterIntakeId);
-		mSlaveIntake = new TalonSRX(Constants.kSlaveIntakeId);
+	public Intake() {
+		IsIntakeOn = false;
+		IsIntakeExtended = false;
+		mIntakeSolenoid = new Solenoid(Constants.kIntakeSolenoidId);
+		mLeftIntake = new TalonSRX(Constants.kLeftIntakeId);
+		mRightIntake = new TalonSRX(Constants.kRightIntakeId);
 		
-		mSlaveIntake.setInverted(true);
+		mLeftIntake.setInverted(true);
+		mRightIntake.setInverted(false);
 		
-		mMasterIntake.setNeutralMode(NeutralMode.Brake);
-		mSlaveIntake.setNeutralMode(NeutralMode.Brake);
+		mLeftIntake.setNeutralMode(NeutralMode.Brake);
+		mRightIntake.setNeutralMode(NeutralMode.Brake);
 		
-		mMasterIntake.set(ControlMode.PercentOutput, 0);
-		mSlaveIntake.set(ControlMode.Follower, Constants.kMasterIntakeId);
+		mLeftIntake.set(ControlMode.PercentOutput, 0);
+		mRightIntake.set(ControlMode.PercentOutput, 0);
+		
+		mIntakeSolenoid.set(false);
 	}
 	
-	public void setIntakeRoller(double volt) {
-		mMasterIntake.set(ControlMode.PercentOutput, volt);
+	private void setOpenLoop(double volt, double volt2) {
+		mLeftIntake.set(ControlMode.PercentOutput, volt);
+		mRightIntake.set(ControlMode.PercentOutput, volt2);
 	}
 	
 	public void setOn() {
 		IsIntakeOn = true;
-		setIntakeRoller(INTAKE_ON);
+		setOpenLoop(0.7, 0.7);
 	}
 	
 	public void setOff() {
 		IsIntakeOn = false;
-		setIntakeRoller(0);
+		setOpenLoop(0,0);
+	}
+	
+	public void set(boolean extend) {
+		IsIntakeExtended = extend;
+		mIntakeSolenoid.set(extend);	
+	}
+	
+	public boolean getIsIntakeExtended() {
+		return IsIntakeExtended;
 	}
 	
 	public void setReverse() {
-		setIntakeRoller(-INTAKE_REVERSE);
+		IsIntakeOn = true;
+		setOpenLoop(INTAKE_REVERSE, INTAKE_REVERSE);
 	}
 	
 	public boolean getIsIntakeOn() {
@@ -66,6 +85,7 @@ public class Intake extends Subsystem {
 	}
 	public void OutputToSmartDashboard() {
 		SmartDashboard.putBoolean("Intake", IsIntakeOn);
+		SmartDashboard.putBoolean("Extended", getIsIntakeExtended());
 	}
     public void initDefaultCommand() {
         // Set the default command for a subsystem here.

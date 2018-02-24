@@ -5,10 +5,9 @@ import org.usfirst.frc.team6002.lib.util.LatchedBoolean;
 
 public class ControlBoard {
 	private static ControlBoard mInstance = new ControlBoard();
-	private static LatchedBoolean mGearEdge = new LatchedBoolean();
-	private static LatchedBoolean mCoGearEdge = new LatchedBoolean();
-	private static LatchedBoolean mShooterEdge = new LatchedBoolean();
 	private static LatchedBoolean mIntakeEdge = new LatchedBoolean();
+	private static LatchedBoolean mIntakeReverseEdge = new LatchedBoolean();
+	private static LatchedBoolean mIntakeExtendEdge = new LatchedBoolean();
 	private static LatchedBoolean mElevatorEdge = new LatchedBoolean();
 	
 	public static ControlBoard getInstance(){
@@ -40,37 +39,37 @@ public class ControlBoard {
 	public boolean getIntake() {
 		return mIntakeEdge.update(mXbox.getRawButton(5));
 	}
-	//ELEVATOR
-	public boolean getClaw() {
-		return mElevatorEdge.update(mXbox.getRawAxis(3) > 0.2);
+	public boolean getExtendIntake() {
+		return mIntakeExtendEdge.update(mXbox.getRawButton(1));
 	}
-	//GEARARM
-//	public boolean getLowerGearArm(){
-//		return mGearEdge.update(mXbox.getRawButton(1));
+//	public boolean getReverseIntake(){
+//		return mIntakeReverseEdge.update(mXbox.getRawButton(3));
 //	}
-	public boolean getDropGear(){
-		return mGearEdge.update(mXbox.getRawButton(2));
+	//ELEVATOR
+	public double getElevator() {
+		return -mXbox.getRawAxis(5);
 	}
+	
+	public boolean getClaw() {
+		return mElevatorEdge.update(mXbox.getRawButton(3));
+	}
+	
+	public boolean getElevatorTestY() {
+		return mXbox.getRawButton(4);
+	}
+	
+	public boolean getElevatorTestB() {
+		return mXbox.getRawButton(2);
+	}
+	
+	//ARM
+	public double getArm() {
+		return mXbox.getRawAxis(0);
+	}
+	
 	//CLAW
 	public boolean getManualClose(){
 		return mXbox.getRawButton(5);
 	}
-	//SHOOTER
-	public boolean getShooter(){
-		return mShooterEdge.update(mXbox.getRawButton(6));
-	}
-	public boolean getReverseShooter(){
-		return mXbox.getRawButton(3);
-	}
-	
-	//CODRIVER CONTROLS
-	public double getClimber(){
-		return mCoXbox.getRawAxis(1);
-	}
-	public boolean getCoLowerGearArm(){
-		return mCoGearEdge.update(mCoXbox.getRawButton(1));
-	}
-	public boolean getCoReverseShooter(){
-		return mCoXbox.getRawButton(3);
-	}
+
 }

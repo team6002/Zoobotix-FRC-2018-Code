@@ -3,20 +3,45 @@ package org.usfirst.frc.team6002.robot;
 public class Constants {
 	
 	public static double kLooperDt = 0.01;
+	public static int kTimeoutMs = 0;
 	
 	//DRIVE ID
-	public static int kLeftDriveMasterId = 1;
-	public static int kLeftDriveSlaveId = 2;
-	public static int kRightDriveMasterId = 3;
-	public static int kRightDriveSlaveId = 4;
+	public static int kLeftDriveMasterId = 14;
+	public static int kLeftDriveSlaveId = 15;
+	public static int kRightDriveMasterId = 1;
+	public static int kRightDriveSlaveId = 0;
 	
 	//SHOOTER ID
 	public static int kMasterShooterId = 16;
 	public static int kSlaveShooterId = 17;
 	
 	//INTAKE ID
-	public static int kMasterIntakeId = 5;
-	public static int kSlaveIntakeId = 6;
+	public static int kIntakeSolenoidId = 1;
+	public static int kLeftIntakeId = 13;
+	public static int kRightIntakeId = 2;
+	
+	//ELEVATOR ID
+	public static int kClawSolenoidId = 5;
+	public static int kElevatorMasterId = 12; 
+	public static int kElevatorSlaveId = 3;
+	
+	//ARM ID
+	public static int kArmId = 4;
+	
+	//Arm PID
+	public static int kArmPIDLoopId = 0;
+	public static double kArmKf = 0.0;
+	public static double kArmKp = 2.5;
+	public static double kArmKi = 0.0;
+	public static double kArmKd = 0.0;
+	
+	//ELEVATOR PID
+	public static int kElevatorPIDLoopId = 0;
+	public static double kElevatorKf = 0.0;
+	public static double kElevatorKp = 0.13;
+	public static double kElevatorKi = 0.0;
+	public static double kElevatorKd = 0.0;
+	
 	
 	//DRIVE PID
 	public static int kDriveEncTimeoutMs = 10;
@@ -42,6 +67,10 @@ public class Constants {
     public static double kTrackWidthInches = 23.8;
     public static double kTrackEffectiveDiameter = (kTrackWidthInches * kTrackWidthInches
             + kTrackLengthInches * kTrackLengthInches) / kTrackWidthInches;
+	
+
+	//Elevator Specs
+	public static double kElevatorDiameterInches = 1.5;
 	
 	// Path following constants
     public static double kPathFollowingLookahead = 24.0; // inches

@@ -12,11 +12,12 @@ import edu.wpi.first.wpilibj.command.Scheduler;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 //import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
+import org.usfirst.frc.team6002.robot.subsystems.Arm;
 import org.usfirst.frc.team6002.robot.subsystems.Drive;
-import org.usfirst.frc.team6002.robot.subsystems.GearArm;
 import org.usfirst.frc.team6002.robot.subsystems.Intake;
 import org.usfirst.frc.team6002.robot.subsystems.Superstructure;
 import org.usfirst.frc.team6002.robot.subsystems.Elevator;
+//import org.usfirst.frc.team6002.robot.subsystems.TestSolenoid;
 
 import org.usfirst.frc.team6002.robot.subsystems.I2CArduino;
 import org.usfirst.frc.team6002.auto.AutoModeExecuter;
@@ -24,9 +25,7 @@ import org.usfirst.frc.team6002.robot.ControlBoard;
 import org.usfirst.frc.team6002.lib.util.CrashTracker;
 import org.usfirst.frc.team6002.lib.util.DriveSignal;
 import org.usfirst.frc.team6002.robot.CheesyDriveHelper;
-import org.usfirst.frc.team6002.robot.commands.ExampleCommand;
 import org.usfirst.frc.team6002.robot.loops.Looper;
-import org.usfirst.frc.team6002.robot.subsystems.ExampleSubsystem;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -37,7 +36,6 @@ import org.usfirst.frc.team6002.robot.subsystems.ExampleSubsystem;
  */
 public class Robot extends IterativeRobot {
 
-	public static final ExampleSubsystem exampleSubsystem = new ExampleSubsystem();
 	public static OI oi;
     private Compressor compressor_;
     
@@ -45,10 +43,13 @@ public class Robot extends IterativeRobot {
     private Superstructure mSuperstructure = Superstructure.getInstance();
 	//S U B S Y S T E M
 	Drive mDrive = Drive.getInstance();
-	GearArm mGearArm = new GearArm();
-	Intake mIntake = new Intake();
-	Elevator mElevator = new Elevator();
+	Intake mIntake = Intake.getInstance();
+	Elevator mElevator = Elevator.getInstance();
+	Arm mArm = Arm.getInstance();
 	I2CArduino mArduino = new I2CArduino();
+	
+	//Counter for slowing down print speed.
+	int _loops = 0;
 	
 	//other parts of robot
 	ControlBoard mControls = ControlBoard.getInstance();
@@ -81,24 +82,28 @@ public class Robot extends IterativeRobot {
 		timer.start();
 		
 		try{
-//			CameraServer.getInstance().startAutomaticCapture(0);
-//			CameraServer.getInstance().startAutomaticCapture(1);
+			CameraServer.getInstance().startAutomaticCapture(0);
+			CameraServer.getInstance().startAutomaticCapture(1);
 //			AxisCamera gearCamera = CameraServer.getInstance().addAxisCamera("axis-camera.local");
 //			gearCamera.setResolution(640, 480);
 //			CameraServer.getInstance().startAutomaticCapture(dev);
 			mEnabledLooper.register(mDrive.getLoop());
-//			mSmartDashBoardInteractions.initWithDefaults();
+			mEnabledLooper.register(mElevator.getLoop());
+			mEnabledLooper.register(mArm.getLoop());
+			mSuperstructure.registerEnabledLoops(mEnabledLooper);
+
 			outputAllToSmartDashboard();
 			AutoModeSelector.initAutoModeSelector();
+			
 			compressor_ = new Compressor(Constants.kCompressorId);
 			compressor_.setClosedLoopControl(true);
 			mDrive.setHighGear(false);
 			mDrive.resetEncoders();
-			mGearArm.closeClaw();
-			mGearArm.homeGearArm();
-			mIntake.init();
-			mElevator.init();
+			mElevator.resetEncoder();
+			mArm.resetEncoder();
+			
 			mArduino.init();
+			
 			timer.start();
 		}catch (Throwable t) {
             CrashTracker.logThrowableCrash(t);
@@ -118,7 +123,9 @@ public class Robot extends IterativeRobot {
         }
         mAutoModeExecuter = null;
 		mDrive.resetEncoders();
-		mGearArm.closeClaw();
+		mIntake.setOff();
+		mElevator.stop();
+//		mGearArm.closeClaw();
 	}
 
 	@Override
@@ -229,6 +236,7 @@ public class Robot extends IterativeRobot {
             mDrive.setOpenLoop(DriveSignal.NEUTRAL);
             mDrive.setBrakeMode(false);
             mDrive.resetEncoders();
+            mElevator.resetEncoder();//ELEVATOR ENCODER RESET HERE!!
 		}catch (Throwable t){
 			CrashTracker.logThrowableCrash(t);
 			throw t;
@@ -243,21 +251,16 @@ public class Robot extends IterativeRobot {
 		Scheduler.getInstance().run();
 		
 		try{
+			double timestamp = Timer.getFPGATimestamp();
+			
 			double throttle = mControls.getThrottle();
             double turn = mControls.getTurn();
-            
-            
-//                mDrive.setBrakeMode(false);
-//                mDrive.setHighGear(!mControls.getLowGear());
                 mDrive.setOpenLoop(mCheesyDriveHelper.cheesyDrive(throttle, turn, mControls.getQuickTurn()));
                 mDrive.setHighGear(!mControls.getLowGear());
-//                if(mControls.getLowerGearArm() || mControls.getCoLowerGearArm()){
-//                	mGearArm.switchGetGearToggle();
+
+//                if(mControls.getDropGear()){
+//                	mArduino.Arduino.write(84, mArduino.toSend[0]);
 //                }
-                if(mControls.getDropGear()){
-//                	mGearArm.setWantsToDrop(true);
-                	mArduino.Arduino.write(84, mArduino.toSend[0]);
-                }
                 if(mControls.getIntake()) {
                 	if(!mIntake.getIsIntakeOn()) {
                 		mSuperstructure.setWantIntakeOn();
@@ -266,19 +269,50 @@ public class Robot extends IterativeRobot {
                 		mSuperstructure.setWantIntakeStopped();
                 	}
                 }
-                if(mControls.getClaw()) {
-                	if(!mElevator.getIsClawOpen()) {
-                		mElevator.openClaw();
+//                if(mControls.getReverseIntake()) {
+//            		if(!mIntake.getIsIntakeOn()) {
+////            			mSuperstructure.setWantIntakeReversed();	
+//            			mIntake.setReverse();
+//            		}
+//            		else {
+//            			mSuperstructure.setWantIntakeStopped();
+//            		}
+//        		}
+                if(mControls.getExtendIntake()) {
+                	if(!mIntake.getIsIntakeExtended()) {
+                		mIntake.set(true);
                 	}
                 	else {
-                		mElevator.closeClaw();
+                		mIntake.set(false);
                 	}
                 }
-               if(mControls.getManualClose()){
-                	mGearArm.setClawToggle(true);;
+//                if(mControls.getElevatorTestB()) {
+//                	mElevator.setWantedState(Elevator.WantedState.HOME);
+//                }
+                else if (mControls.getElevatorTestY()) {
+                	mElevator.setWantedState(Elevator.WantedState.SEEK);
                 }
-                mGearArm.update();
-                outputAllToSmartDashboard();
+                if(mControls.getElevatorTestB()) {
+                	mElevator.setWantedState(Elevator.WantedState.OPEN_LOOP);
+                }
+
+                mElevator.setOpenLoop(mControls.getElevator());
+                mArm.setOpenLoop(mControls.getArm());
+
+                
+                
+
+                
+                /*
+        		 * print every 20 loops, printing too much too fast is generally bad
+        		 * for performance
+        		 */
+        		if (++_loops >= 20) {
+        			_loops = 0;
+        			outputAllToSmartDashboard();
+        		}
+                
+                
                 
                 
 	}catch (Throwable t) {
@@ -289,8 +323,10 @@ public class Robot extends IterativeRobot {
 }
 
 	public void outputAllToSmartDashboard(){
-		mGearArm.outputToSmartDashboard();
-		mDrive.outputToSmartDashboard();
+//		mDrive.outputToSmartDashboard();
+		mIntake.OutputToSmartDashboard();
+        mElevator.OutputToSmartDashboard();
+        mArm.OutputToSmartDashboard();
 	}
 
 	/**

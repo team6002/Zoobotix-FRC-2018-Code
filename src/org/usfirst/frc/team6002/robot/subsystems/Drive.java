@@ -4,7 +4,7 @@ import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.FeedbackDevice;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
-//import com.ctre.phoenix.motorcontrol.can.VictorSPX;
+import com.ctre.phoenix.motorcontrol.can.VictorSPX;
 //import com.ctre.TalonSRX.TalonControlMode;
 import com.kauailabs.navx.frc.AHRS;
 
@@ -37,6 +37,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
  */
 public class Drive extends Subsystem {
 	private static Drive mInstance = new Drive();
+	
 	public static Drive getInstance() {
         return mInstance;
     }
@@ -108,8 +109,8 @@ public class Drive extends Subsystem {
         }
     }
     //Hardware
-    private TalonSRX leftMaster_, leftSlave_, rightMaster_, rightSlave_;
-//    private VictorSPX leftVictorSlave_, rightVictorSlave_;
+    private TalonSRX leftMaster_, rightMaster_; // leftSlave_, rightSlave_
+    private VictorSPX leftVictorSlave_, rightVictorSlave_;
     private final NavX mNavXBoard;
     private Solenoid shifter_;
     
@@ -177,26 +178,27 @@ public class Drive extends Subsystem {
     
     private Drive(){
     	leftMaster_ = new TalonSRX(Constants.kLeftDriveMasterId);
-    	leftSlave_ = new TalonSRX(Constants.kLeftDriveSlaveId);
-//    	leftVictorSlave_ = new VictorSPX(Constants.kLeftDriveSlaveId);
+//    	leftSlave_ = new TalonSRX(Constants.kLeftDriveSlaveId);
+    	leftVictorSlave_ = new VictorSPX(Constants.kLeftDriveSlaveId);
     	
     	rightMaster_ = new TalonSRX(Constants.kRightDriveMasterId);
-        rightSlave_ = new TalonSRX(Constants.kRightDriveSlaveId);
-//        rightVictorSlave_ = new VictorSPX(Constants.kRightDriveSlaveId);
+//        rightSlave_ = new TalonSRX(Constants.kRightDriveSlaveId);
+        rightVictorSlave_ = new VictorSPX(Constants.kRightDriveSlaveId);
         
         mNavXBoard = new NavX(SPI.Port.kMXP);
         shifter_ = new Solenoid(0);
+        shifter_.set(false);
         // Get status at 100Hz
 //        leftMaster_.setStatusFrameRatePeriod(StatusFrameRatePeriod.Feedback, 10);
 //        rightMaster_.setStatusFrameRatePeriod(TalonSRX.StatusFrameRate.Feedback, 10);
         
         leftMaster_.set(ControlMode.PercentOutput, 0);
-        leftSlave_.set(ControlMode.Follower, Constants.kLeftDriveMasterId);
-//        leftVictorSlave_.follow(leftMaster_);
+//        leftSlave_.set(ControlMode.Follower, Constants.kLeftDriveMasterId);
+        leftVictorSlave_.follow(leftMaster_);
         
         rightMaster_.set(ControlMode.PercentOutput, 0);
-        rightSlave_.set(ControlMode.Follower, Constants.kRightDriveMasterId);
-//        rightVictorSlave_.follow(rightMaster_);
+//        rightSlave_.set(ControlMode.Follower, Constants.kRightDriveMasterId);
+        rightVictorSlave_.follow(rightMaster_);
 
         setBrakeMode(true);
         
@@ -208,8 +210,8 @@ public class Drive extends Subsystem {
 //        }
         leftMaster_.setSensorPhase(true);
         leftMaster_.setInverted(false);
-        leftSlave_.setInverted(false);
-//        leftVictorSlave_.setInverted(false);
+//        leftSlave_.setInverted(false);
+        leftVictorSlave_.setInverted(false);
         
         rightMaster_.configSelectedFeedbackSensor(FeedbackDevice.QuadEncoder, 0, Constants.kDriveEncTimeoutMs);
 //        if (rightMaster_.isSensorPresent(
@@ -218,8 +220,8 @@ public class Drive extends Subsystem {
 //        }
         rightMaster_.setSensorPhase(false);
         rightMaster_.setInverted(false);
-        rightSlave_.setInverted(false);
-//        rightVictorSlave_.setInverted(false);
+//        rightSlave_.setInverted(false);
+        rightVictorSlave_.setInverted(false);
 
 //        leftMaster_.configEncoderCodesPerRev(4096);
 //        rightMaster_.configEncoderCodesPerRev(4096);
@@ -479,25 +481,21 @@ public class Drive extends Subsystem {
     public double getRightDistanceInches() {
         return rotationsToInches(rightMaster_.getSelectedSensorPosition(0));
     }
-    private static double inchesPerSecondToRpm(double inches_per_second) {
-        return inchesToRotations(inches_per_second) * 60;
-    }
+    
     private static double inchesToRotations(double inches) {
         return inches / (Constants.kDriveWheelDiameterInches * Math.PI);
     }
     
-    public void setBrakeMode(boolean on) {
-        if (isBrakeMode_ != on) {
-            leftMaster_.setNeutralMode(NeutralMode.Brake);
-            leftSlave_.setNeutralMode(NeutralMode.Brake);
-            rightMaster_.setNeutralMode(NeutralMode.Brake);
-            rightSlave_.setNeutralMode(NeutralMode.Brake);
-            isBrakeMode_ = on;
-        }
-    }
-    
     private static double rotationsToInches(double rotations) {
         return rotations * (Constants.kDriveWheelDiameterInches * Math.PI);
+    }
+    
+    private static double rpmToInchesPerSecond(double rpm) {
+        return rotationsToInches(rpm) / 60;
+    }
+    
+    private static double inchesPerSecondToRpm(double inches_per_second) {
+        return inchesToRotations(inches_per_second) * 60;
     }
     
     public double getLeftVelocityInchesPerSec() {
@@ -507,13 +505,20 @@ public class Drive extends Subsystem {
     public double getRightVelocityInchesPerSec() {
         return rpmToInchesPerSecond(rightMaster_.getSelectedSensorVelocity(0));
     }
-
-    private static double rpmToInchesPerSecond(double rpm) {
-        return rotationsToInches(rpm) / 60;
-    }
     
     public synchronized void stop() {
         setOpenLoop(DriveSignal.NEUTRAL);
+    }
+    
+
+    public void setBrakeMode(boolean on) {
+        if (isBrakeMode_ != on) {
+            leftMaster_.setNeutralMode(NeutralMode.Brake);
+            leftVictorSlave_.setNeutralMode(NeutralMode.Brake);
+            rightMaster_.setNeutralMode(NeutralMode.Brake);
+            rightVictorSlave_.setNeutralMode(NeutralMode.Brake);
+            isBrakeMode_ = on;
+        }
     }
     /**
      * VelocityHeadingSetpoints are used to calculate the robot's path given the

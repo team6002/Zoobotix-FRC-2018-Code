@@ -1,7 +1,7 @@
 package org.usfirst.frc.team6002.robot.subsystems;
 
 import edu.wpi.first.wpilibj.Compressor;
-import edu.wpi.first.wpilibj.Solenoid;
+//import edu.wpi.first.wpilibj.Solenoid;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.command.Subsystem;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -47,12 +47,7 @@ public class Superstructure extends Subsystem {
 
 //    private final Feeder mFeeder = Feeder.getInstance();
     private final Intake mIntake = Intake.getInstance();
-//    private final Hopper mHopper = Hopper.getInstance();
-//    private final Shooter mShooter = Shooter.getInstance();
-//    private final LED mLED = LED.getInstance();
-//    private final Solenoid mHopperSolenoid = Constants.makeSolenoidForId(Constants.kHopperSolenoidId);
-    private final Compressor mCompressor = new Compressor(0);
-//    private final RevRoboticsAirPressureSensor mAirPressureSensor = new RevRoboticsAirPressureSensor(3);
+    private final Elevator mElevator = Elevator.getInstance();
     
     private double mCurrentStateStartTime;
     private boolean mStateChanged;
@@ -64,14 +59,13 @@ public class Superstructure extends Subsystem {
     public enum SystemState {
         IDLE,
         UNJAMMING, // unjamming the feeder and hopper
-        HANGING, //Prepare for Hang
-        LIFTING, //Elevator Lift up
+
        
     };
 
     // Desired function from user
     public enum WantedState {
-        IDLE, UNJAM, HANG, LIFT
+        IDLE, UNJAM,
     }
 
     private SystemState mSystemState = SystemState.IDLE;
@@ -117,9 +111,6 @@ public class Superstructure extends Subsystem {
                 case UNJAMMING:
                     newState = handleUnjamming();
                     break;
-                case HANGING:
-                	newState = handleHang();
-                	break;
                 default:
                     newState = SystemState.IDLE;
                 }
@@ -149,39 +140,26 @@ public class Superstructure extends Subsystem {
 //            mFeeder.setWantedState(Feeder.WantedState.IDLE);
 //            mHopper.setWantedState(Hopper.WantedState.IDLE);
         }
-        mCompressor.setClosedLoopControl(!mCompressorOverride);
+//        mCompressor.setClosedLoopControl(!mCompressorOverride);
 
         switch (mWantedState) {
-        case UNJAM:
-            return SystemState.UNJAMMING;
+    	case UNJAM:
+    		return SystemState.UNJAMMING;
         default:
             return SystemState.IDLE;
-        }
+    	}
     }
-
+   
     private SystemState handleUnjamming() {
         
-        switch (mWantedState) {
-        case UNJAM:
-            return SystemState.UNJAMMING;
+    	switch (mWantedState) {
+    	case UNJAM:
+    		return SystemState.UNJAMMING;
         default:
             return SystemState.IDLE;
-        }
+    	}
     }
 
-    private SystemState handleHang() {
-//        mCompressor.setClosedLoopControl(false);
-//        mFeeder.setWantedState(Feeder.WantedState.IDLE);
-//        mHopper.setWantedState(Hopper.WantedState.IDLE);
-//        mShooter.setOpenLoop(-12.0);
-//
-        switch (mWantedState) {
-        case HANG:
-            return SystemState.HANGING;
-        default:
-            return SystemState.IDLE;
-        }
-    }
 
     public synchronized double getCurrentRange() {
         return mLastGoalRange;
@@ -194,7 +172,7 @@ public class Superstructure extends Subsystem {
 
 //    @Override
     public void outputToSmartDashboard() {
- 
+    	
     }
 
 //    @Override
