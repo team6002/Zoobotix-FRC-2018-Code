@@ -16,6 +16,7 @@ import org.usfirst.frc.team6002.robot.subsystems.Arm;
 import org.usfirst.frc.team6002.robot.subsystems.Drive;
 import org.usfirst.frc.team6002.robot.subsystems.Intake;
 import org.usfirst.frc.team6002.robot.subsystems.Superstructure;
+import org.usfirst.frc.team6002.robot.subsystems.Superstructure.WantedState;
 import org.usfirst.frc.team6002.robot.subsystems.Elevator;
 //import org.usfirst.frc.team6002.robot.subsystems.TestSolenoid;
 
@@ -92,7 +93,7 @@ public class Robot extends IterativeRobot {
 			mEnabledLooper.register(mArm.getLoop());
 			mSuperstructure.registerEnabledLoops(mEnabledLooper);
 
-			outputAllToSmartDashboard();
+			mSuperstructure.OutputAllToSmartDashboard();
 			AutoModeSelector.initAutoModeSelector();
 			
 			compressor_ = new Compressor(Constants.kCompressorId);
@@ -124,7 +125,9 @@ public class Robot extends IterativeRobot {
         mAutoModeExecuter = null;
 		mDrive.resetEncoders();
 		mIntake.setOff();
-		mElevator.stop();
+//		mElevator.stop();
+		mSuperstructure.resetAll();
+//		mArm.setWantedState(Arm.WantedState.OPEN_LOOP);
 //		mGearArm.closeClaw();
 	}
 
@@ -192,7 +195,7 @@ public class Robot extends IterativeRobot {
 	public void autonomousPeriodic() {
 		Scheduler.getInstance().run();
 		try {
-            outputAllToSmartDashboard();
+            mSuperstructure.OutputAllToSmartDashboard();
 //            updateDriverFeedback();
 			
         } catch (Throwable t) {
@@ -286,15 +289,23 @@ public class Robot extends IterativeRobot {
                 		mIntake.set(false);
                 	}
                 }
+                if(mControls.getClaw()) {
+                	if(mArm.getIsClawOpen()) {
+                		mArm.close();
+                	}else {
+                		mArm.open();
+                	}
+                }
 //                if(mControls.getElevatorTestB()) {
 //                	mElevator.setWantedState(Elevator.WantedState.HOME);
 //                }
-                else if (mControls.getElevatorTestY()) {
-                	mElevator.setWantedState(Elevator.WantedState.SEEK);
+                if(mControls.getTestB()) {
+                	mSuperstructure.setWantedState(Superstructure.WantedState.HOME);
                 }
-                if(mControls.getElevatorTestB()) {
-                	mElevator.setWantedState(Elevator.WantedState.OPEN_LOOP);
+                if (mControls.getTestY()) {
+                	mSuperstructure.setWantedState(Superstructure.WantedState.PREPARE_TO_DEPLOY);
                 }
+               
 
                 mElevator.setOpenLoop(mControls.getElevator());
                 mArm.setOpenLoop(mControls.getArm());
@@ -304,12 +315,13 @@ public class Robot extends IterativeRobot {
 
                 
                 /*
-        		 * print every 20 loops, printing too much too fast is generally bad
+        		 * print every 30 loops, printing too much too fast is generally bad
         		 * for performance
         		 */
-        		if (++_loops >= 20) {
+        		if (++_loops >= 30) {
         			_loops = 0;
-        			outputAllToSmartDashboard();
+        			mSuperstructure.OutputAllToSmartDashboard();
+//        			OutputAllToSmartDashboard();
         		}
                 
                 
@@ -321,13 +333,12 @@ public class Robot extends IterativeRobot {
         
 	}
 }
-
-	public void outputAllToSmartDashboard(){
-//		mDrive.outputToSmartDashboard();
-		mIntake.OutputToSmartDashboard();
-        mElevator.OutputToSmartDashboard();
-        mArm.OutputToSmartDashboard();
-	}
+//	public void OutputAllToSmartDashboard() {
+//		mArm.OutputToSmartDashboard();
+//		mElevator.OutputToSmartDashboard();
+//		mSuperstructure.OutputToSmartDashboard();
+//		mIntake.OutputToSmartDashboard();
+//	}
 
 	/**
 	 * This function is called periodically during test mode

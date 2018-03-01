@@ -45,6 +45,16 @@ public class ControlBoard {
 //	public boolean getReverseIntake(){
 //		return mIntakeReverseEdge.update(mXbox.getRawButton(3));
 //	}
+	
+	//Test Buttons(careful not a latched boolean)
+	public boolean getTestY() {
+		return mXbox.getRawButton(4);
+	}
+	
+	public boolean getTestB() {
+		return mXbox.getRawButton(2);
+	}
+	
 	//ELEVATOR
 	public double getElevator() {
 		return -mXbox.getRawAxis(5);
@@ -52,16 +62,7 @@ public class ControlBoard {
 	
 	public boolean getClaw() {
 		return mElevatorEdge.update(mXbox.getRawButton(3));
-	}
-	
-	public boolean getElevatorTestY() {
-		return mXbox.getRawButton(4);
-	}
-	
-	public boolean getElevatorTestB() {
-		return mXbox.getRawButton(2);
-	}
-	
+	}	
 	//ARM
 	public double getArm() {
 		return mXbox.getRawAxis(0);

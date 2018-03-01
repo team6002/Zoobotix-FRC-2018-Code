@@ -12,7 +12,8 @@ import org.usfirst.frc.team6002.robot.RobotState;
 //import org.usfirst.frc.team6002.robot.ShooterAimingParameters;
 import org.usfirst.frc.team6002.robot.loops.Loop;
 import org.usfirst.frc.team6002.robot.loops.Looper;
-
+import org.usfirst.frc.team6002.robot.subsystems.Elevator.SeekState;
+import org.usfirst.frc.team6002.robot.subsystems.Elevator.SystemState;
 
 import java.util.Optional;
 
@@ -48,6 +49,7 @@ public class Superstructure extends Subsystem {
 //    private final Feeder mFeeder = Feeder.getInstance();
     private final Intake mIntake = Intake.getInstance();
     private final Elevator mElevator = Elevator.getInstance();
+    private final Arm mArm = Arm.getInstance();
     
     private double mCurrentStateStartTime;
     private boolean mStateChanged;
@@ -58,6 +60,8 @@ public class Superstructure extends Subsystem {
     // Intenal state of the system
     public enum SystemState {
         IDLE,
+        PREPARING_TO_DEPLOY,
+        HOME,
         UNJAMMING, // unjamming the feeder and hopper
 
        
@@ -65,7 +69,7 @@ public class Superstructure extends Subsystem {
 
     // Desired function from user
     public enum WantedState {
-        IDLE, UNJAM,
+        IDLE, PREPARE_TO_DEPLOY, HOME, UNJAM,
     }
 
     private SystemState mSystemState = SystemState.IDLE;
@@ -108,9 +112,12 @@ public class Superstructure extends Subsystem {
                 case IDLE:
                     newState = handleIdle(mStateChanged);
                     break;
-                case UNJAMMING:
-                    newState = handleUnjamming();
-                    break;
+                case PREPARING_TO_DEPLOY:
+                	newState = handlePrepareToDeploy();
+                	break;
+                case HOME:
+                	newState = handleHome();
+                	break;
                 default:
                     newState = SystemState.IDLE;
                 }
@@ -132,34 +139,54 @@ public class Superstructure extends Subsystem {
             stop();
         }
     };
-
+    
+    private SystemState defaultStateTransfer() {
+    	switch (mWantedState) {
+    	case PREPARE_TO_DEPLOY:
+    		return SystemState.PREPARING_TO_DEPLOY;
+    	case HOME:
+    		return SystemState.HOME;
+    	case IDLE:
+    		return SystemState.IDLE;
+    	default:
+    		return SystemState.IDLE;
+        }
+    }
+    
+    private SystemState handlePrepareToDeploy() {
+    	if(mElevator.getSeekState() != SeekState.OPEN_SLOT) {//elevator not in position
+    		mElevator.setWantedState(Elevator.WantedState.SEEK);
+    	}else {
+    		//deploy arm and stop elevator in position
+    		mArm.deploy();
+    		mElevator.setSeekState(Elevator.SeekState.SENSING);
+    		mWantedState = WantedState.IDLE;
+    		return SystemState.IDLE;
+    	}
+    	
+    	return defaultStateTransfer();
+    }
+    
+    private SystemState handleHome() {
+    	mElevator.setWantedState(Elevator.WantedState.HOME);
+    	mArm.setWantedState(Arm.WantedState.HOME);
+    	
+    	return defaultStateTransfer();
+    }
+    
     private SystemState handleIdle(boolean stateChanged) {
         if (stateChanged) {
             stop();
+            mElevator.setWantedState(Elevator.WantedState.OPEN_LOOP);
+            mArm.setWantedState(Arm.WantedState.OPEN_LOOP);
 //            mLED.setWantedState(LED.WantedState.OFF);
 //            mFeeder.setWantedState(Feeder.WantedState.IDLE);
 //            mHopper.setWantedState(Hopper.WantedState.IDLE);
         }
 //        mCompressor.setClosedLoopControl(!mCompressorOverride);
 
-        switch (mWantedState) {
-    	case UNJAM:
-    		return SystemState.UNJAMMING;
-        default:
-            return SystemState.IDLE;
-    	}
+       return defaultStateTransfer();
     }
-   
-    private SystemState handleUnjamming() {
-        
-    	switch (mWantedState) {
-    	case UNJAM:
-    		return SystemState.UNJAMMING;
-        default:
-            return SystemState.IDLE;
-    	}
-    }
-
 
     public synchronized double getCurrentRange() {
         return mLastGoalRange;
@@ -168,21 +195,35 @@ public class Superstructure extends Subsystem {
     public synchronized void setWantedState(WantedState wantedState) {
         mWantedState = wantedState;
     }
-
+    
+    public SystemState getSystemState() {
+    	return mSystemState;
+    }
 
 //    @Override
-    public void outputToSmartDashboard() {
-    	
+    public void OutputAllToSmartDashboard() {
+//    	mDrive.OutputToSmartDashboard();
+    	mElevator.OutputToSmartDashboard();
+    	mArm.OutputToSmartDashboard();
+    	mIntake.OutputToSmartDashboard();
+    	SmartDashboard.putString("Superstructure SystemState", mSystemState.name());
     }
 
 //    @Override
     public void stop() {
-
+    	
     }
-
+    
+    public void resetAll() {
+    	mArm.setWantedState(Arm.WantedState.OPEN_LOOP);
+    	mElevator.setWantedState(Elevator.WantedState.OPEN_LOOP);
+    	setWantedState(WantedState.IDLE);
+    }
 //    @Override
     public void zeroSensors() {
-
+    	mDrive.resetEncoders();
+    	mElevator.resetEncoder();
+    	mArm.resetEncoder();
     }
 
 //    @Override

@@ -58,6 +58,7 @@ public class Drive extends Subsystem {
         VELOCITY_SETPOINT, // velocity PID control
         PATH_FOLLOWING, // used for autonomous driving
         TURN_TO_HEADING, // turn in place
+        PREPARE_TO_DEPLOY, // move drive base to be correct distance away from scale
     }
     
  // Control states
@@ -127,7 +128,7 @@ public class Drive extends Subsystem {
     private VelocityHeadingSetpoint velocityHeadingSetpoint_;
     private SynchronousPID velocityHeadingPid_;
     
- // Logging
+    // Logging
     private final ReflectingCSVWriter<PathFollower.DebugOutput> mCSVWriter;
     
     public Loop getLoop() {
@@ -162,6 +163,8 @@ public class Drive extends Subsystem {
                 case TURN_TO_HEADING:
                     updateTurnToHeading(timestamp);
                     return;
+                case PREPARE_TO_DEPLOY:
+                	return;
                 default:
                     System.out.println("Unexpected drive control state: " + mDriveControlState);
                     break;
@@ -178,11 +181,9 @@ public class Drive extends Subsystem {
     
     private Drive(){
     	leftMaster_ = new TalonSRX(Constants.kLeftDriveMasterId);
-//    	leftSlave_ = new TalonSRX(Constants.kLeftDriveSlaveId);
     	leftVictorSlave_ = new VictorSPX(Constants.kLeftDriveSlaveId);
     	
     	rightMaster_ = new TalonSRX(Constants.kRightDriveMasterId);
-//        rightSlave_ = new TalonSRX(Constants.kRightDriveSlaveId);
         rightVictorSlave_ = new VictorSPX(Constants.kRightDriveSlaveId);
         
         mNavXBoard = new NavX(SPI.Port.kMXP);
@@ -193,47 +194,32 @@ public class Drive extends Subsystem {
 //        rightMaster_.setStatusFrameRatePeriod(TalonSRX.StatusFrameRate.Feedback, 10);
         
         leftMaster_.set(ControlMode.PercentOutput, 0);
-//        leftSlave_.set(ControlMode.Follower, Constants.kLeftDriveMasterId);
         leftVictorSlave_.follow(leftMaster_);
         
         rightMaster_.set(ControlMode.PercentOutput, 0);
-//        rightSlave_.set(ControlMode.Follower, Constants.kRightDriveMasterId);
         rightVictorSlave_.follow(rightMaster_);
 
         setBrakeMode(true);
         
      // Set up the encoders
         leftMaster_.configSelectedFeedbackSensor(FeedbackDevice.QuadEncoder, 0, Constants.kDriveEncTimeoutMs);
-//        if (leftMaster_.isSensorPresent(
-//                FeedbackDevice.QuadEncoder) != FeedbackDeviceStatus.FeedbackStatusPresent) {
-//            DriverStation.reportError("Could not detect left drive encoder!", false);
-//        }
         leftMaster_.setSensorPhase(true);
         leftMaster_.setInverted(false);
-//        leftSlave_.setInverted(false);
+        
         leftVictorSlave_.setInverted(false);
         
         rightMaster_.configSelectedFeedbackSensor(FeedbackDevice.QuadEncoder, 0, Constants.kDriveEncTimeoutMs);
-//        if (rightMaster_.isSensorPresent(
-//                FeedbackDevice.QuadEncoder) != FeedbackDeviceStatus.FeedbackStatusPresent) {
-//            DriverStation.reportError("Could not detect right drive encoder!", false);
-//        }
         rightMaster_.setSensorPhase(false);
         rightMaster_.setInverted(false);
-//        rightSlave_.setInverted(false);
+
         rightVictorSlave_.setInverted(false);
 
-//        leftMaster_.configEncoderCodesPerRev(4096);
-//        rightMaster_.configEncoderCodesPerRev(4096);
-        
-//        leftMaster_.configNominalOutputVoltage(+0.0f,  -0.0f);
-//        leftMaster_.configPeakOutputVoltage(+12.0f, -12.0f);
+
         leftMaster_.configNominalOutputForward(0, Constants.kDriveTimeoutMs);
         leftMaster_.configNominalOutputReverse(0, Constants.kDriveTimeoutMs);
         leftMaster_.configPeakOutputForward(1, Constants.kDriveTimeoutMs);
         leftMaster_.configPeakOutputReverse(-1, Constants.kDriveTimeoutMs);
-//        rightMaster_.configNominalOutputVoltage(+0.0f,  -0.0f);
-//        rightMaster_.configPeakOutputVoltage(+12.0f, -12.0f);
+
         rightMaster_.configNominalOutputForward(0, Constants.kDriveTimeoutMs);
         rightMaster_.configNominalOutputReverse(0, Constants.kDriveTimeoutMs);
         rightMaster_.configPeakOutputForward(1, Constants.kDriveTimeoutMs);
@@ -321,11 +307,7 @@ public class Drive extends Subsystem {
             rightMaster_.set(ControlMode.PercentOutput, 0);
         }
     }
-    /**
-     * Turn the robot to a target heading.
-     * 
-     * Is called periodically when the robot is auto-aiming towards the boiler.
-     */
+    
     /**
      * Turn the robot to a target heading.
      * 
@@ -429,6 +411,20 @@ public class Drive extends Subsystem {
         }
     }
     
+    double target = 12.0;
+    public synchronized void handlePrepareToDeploy(double distance, boolean done) {
+    	if (done) {
+    		if(distance > target) { //move towards distance sensor; backwards
+    			
+    		}else if (distance < target) { // move away from distance sensor; forwards
+    			
+    		}else {// on target!
+    			
+    		}
+    	}
+    	
+    }
+    
     public void setMotors(double speed, double speed2){
     	leftMaster_.set(ControlMode.PercentOutput, speed);
     	rightMaster_.set(ControlMode.PercentOutput, -speed2);
@@ -455,8 +451,6 @@ public class Drive extends Subsystem {
         leftMaster_.setSelectedSensorPosition(0, 0, 0);
         rightMaster_.setSelectedSensorPosition(0, 0, 0);
 
-//        leftMaster_.setEncPosition(0);
-//        rightMaster_.setEncPosition(0);
     }
     private void configureTalonsForSpeedControl() {
         if (driveControlState_ != DriveControlState.VELOCITY_SETPOINT) {
@@ -537,7 +531,7 @@ public class Drive extends Subsystem {
 	        mNavXBoard.setAngleAdjustment(angle);
 	}
 	
-	public void outputToSmartDashboard() {
+	public void OutputToSmartDashboard() {
 		final double left_speed = getLeftVelocityInchesPerSec();
         final double right_speed = getRightVelocityInchesPerSec();
 		SmartDashboard.putNumber("left speed", left_speed);

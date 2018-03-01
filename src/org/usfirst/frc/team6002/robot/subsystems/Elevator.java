@@ -38,7 +38,7 @@ public class Elevator extends Subsystem {
     static int ELEVATOR_MIN = 0;
     static int SENSING_SPEED = 30;
     static int SWITCH_HEIGHT = 10000;
-    static int SCALE_HEIGHT = 0;
+    static int SCALE_HEIGHT = 17000;
       
     public enum SystemState {
     	OPEN_LOOP,
@@ -54,13 +54,13 @@ public class Elevator extends Subsystem {
     	HOLD
     }
     
-    private enum SeekState {
+    public enum SeekState {
     	SENSING, BOTTOM, OPEN_SLOT,
     }
     private SeekState mSeekState = SeekState.SENSING;
     
-    private SystemState mSystemState = SystemState.HOME;
-    private WantedState mWantedState = WantedState.HOME;
+    private SystemState mSystemState = SystemState.OPEN_LOOP;
+    private WantedState mWantedState = WantedState.OPEN_LOOP;
     
     private double mCurrentStateStartTime;
     private boolean mStateChanged;
@@ -75,7 +75,9 @@ public class Elevator extends Subsystem {
         public void onStart(double timestamp) {
             stop();
             synchronized (Elevator.this) {
-                mSystemState = SystemState.HOME;
+            	mWantedState = WantedState.OPEN_LOOP;
+                mSystemState = SystemState.OPEN_LOOP;
+                
                 mCurrentStateStartTime = timestamp;
                 mStateChanged = true;
             }
@@ -132,16 +134,27 @@ public class Elevator extends Subsystem {
     	case HOLD:
     		return SystemState.HOLDING;
     	default:
-            return SystemState.SEEKING;  
+            return SystemState.HOME;  
         }
     }
+    
     private SystemState handleOpenLoop() {
     	//let elevator run to wanted position
     	return defaultStateTransfer();
     }
     
     private SystemState handleHome() {
-    	wantedPosition = 0;
+    	if(mStateChanged) {
+//    		mWantedState = WantedState.HOME;
+    	}
+    	
+    	if(getElevatorPosition() <= 100) {
+    		wantedPosition = 0;
+    		mWantedState = WantedState.OPEN_LOOP;
+    		return SystemState.OPEN_LOOP;
+    	}else {
+    		setWantedPositionIncrement(-50);
+    	}
     	
     	return defaultStateTransfer();
     }
@@ -153,10 +166,11 @@ public class Elevator extends Subsystem {
     		if(getDistanceInches() < 24) {// found switch already
     			mSeekState = SeekState.OPEN_SLOT;
     			wantedPosition = SWITCH_HEIGHT;
+    			mWantedState = WantedState.OPEN_LOOP;
     			return SystemState.OPEN_LOOP;
     		}else {
     			mSeekState = SeekState.SENSING;
-//    			wantedPosition = SCALE_HEIGHT;
+    			wantedPosition = SCALE_HEIGHT;
     		}
     	}
     	if(mSeekState == SeekState.SENSING) {
@@ -165,7 +179,9 @@ public class Elevator extends Subsystem {
     			mSeekState = SeekState.BOTTOM;
     		}else if(getElevatorPosition() > 30000) {
     			//failed!
-    			return SystemState.HOLDING;
+    			mSeekState = SeekState.OPEN_SLOT;
+    			mWantedState = WantedState.OPEN_LOOP;
+    			return SystemState.OPEN_LOOP;
     		}else {
     			//keep looking
     			setWantedPositionIncrement(SENSING_SPEED);
@@ -173,27 +189,20 @@ public class Elevator extends Subsystem {
     	}else if (mSeekState == SeekState.BOTTOM) {
     		if(getDistanceInches() > 24) {//found open slot
     			mSeekState = SeekState.OPEN_SLOT;
-    			return SystemState.HOLDING;
+    			mWantedState = WantedState.OPEN_LOOP;
+    			return SystemState.OPEN_LOOP;
     		}else if(getElevatorPosition() > 30000) {
     			//failed!
-//    			mWantedState = Elevator.WantedState.HOME;
-    			return SystemState.HOLDING;
+    			mSeekState = SeekState.OPEN_SLOT;
+    			mWantedState = WantedState.OPEN_LOOP;
+    			return SystemState.OPEN_LOOP;
     		}else {
     			//keep looking
     			setWantedPositionIncrement(SENSING_SPEED);
     		}	
     	}
+    	return SystemState.SEEKING;
 
-    	switch (mWantedState) {
-    	case SEEK:
-    		return SystemState.SEEKING;
-    	case HOME:
-    		return SystemState.HOME;
-    	case HOLD:
-    		return SystemState.HOLDING;
-    	default:
-            return SystemState.SEEKING;
-    	}
     }
     
     private SystemState handleHolding() {
@@ -241,8 +250,8 @@ public class Elevator extends Subsystem {
     	mElevatorMaster.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, Constants.kElevatorPIDLoopId, Constants.kTimeoutMs);
     	mElevatorSlave.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, Constants.kElevatorPIDLoopId, Constants.kTimeoutMs);
     	
-    	mSystemState = SystemState.HOME;
-        mWantedState = WantedState.HOME;
+    	mSystemState = SystemState.OPEN_LOOP;
+        mWantedState = WantedState.OPEN_LOOP;
 //    	int absolutePosition = mElevatorMaster.getSensorCollection().getPulseWidthPosition();
     	
     	resetEncoder();
@@ -253,7 +262,7 @@ public class Elevator extends Subsystem {
     	if(Math.abs(joy) < 0.5) {
     		return;
     	}
-    	int increment = (int) (joy * 1200);
+    	int increment = (int) (joy * 700);
     	setWantedPosition(increment + wantedPosition);
     }
     
@@ -273,6 +282,10 @@ public class Elevator extends Subsystem {
     public int getElevatorPosition() {
     	return mElevatorMaster.getSelectedSensorPosition(0);
     }
+    
+    public SeekState getSeekState() {
+    	return mSeekState;
+    }
 
     public void resetEncoder() { //reset elevator's relative position
     	mElevatorMaster.setSelectedSensorPosition(0, Constants.kElevatorPIDLoopId, 0);
@@ -280,6 +293,10 @@ public class Elevator extends Subsystem {
     
     public synchronized void setWantedState(WantedState state) {
         mWantedState = state;
+    }
+    
+    public synchronized void setSeekState(SeekState state) {
+    	mSeekState = state;
     }
     
     private double getDistanceInches() {
@@ -290,7 +307,9 @@ public class Elevator extends Subsystem {
     	SmartDashboard.putNumber("Elevator Master Position", mElevatorMaster.getSelectedSensorPosition(0));
     	SmartDashboard.putNumber("Distance Sensor", getDistanceInches());
     	SmartDashboard.putNumber("wanted position", wantedPosition);
-    	System.out.println("Elevator State " + mSystemState + " Seek State " + mSeekState);
+    	SmartDashboard.putString("Elevator SystemState", mSystemState.name());
+//    	SmartDashboard.putString("Seek State", mSystemState.name());
+//    	System.out.println("Elevator State " + mSystemState + " Seek State " + mSeekState);
     }
     
     public void stop() {

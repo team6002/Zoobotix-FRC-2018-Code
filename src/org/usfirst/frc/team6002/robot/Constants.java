@@ -38,7 +38,7 @@ public class Constants {
 	//ELEVATOR PID
 	public static int kElevatorPIDLoopId = 0;
 	public static double kElevatorKf = 0.0;
-	public static double kElevatorKp = 0.13;
+	public static double kElevatorKp = 0.37;
 	public static double kElevatorKi = 0.0;
 	public static double kElevatorKd = 0.0;
 	
@@ -61,7 +61,7 @@ public class Constants {
 	public static double kDShooterVelocity = 0.0;
 	
 	//Wheels
-	public static double kDriveWheelDiameterInches = 4;
+	public static double kDriveWheelDiameterInches = 6;
 	public static double kTrackScrubFactor = 0.5;
 	public static double kTrackLengthInches = 8.265;
     public static double kTrackWidthInches = 23.8;
