@@ -16,13 +16,13 @@ import java.util.ArrayList;
  * @see CenterGearToShootBlue
  * @see PathContainer
  */
-public class ForwardSomeDistance implements PathContainer {
+public class CenterGear implements PathContainer {
 
     @Override
     public Path buildPath() {
         ArrayList<Waypoint> sWaypoints = new ArrayList<Waypoint>();
         sWaypoints.add(new Waypoint(16, 160, 0, 0));
-        sWaypoints.add(new Waypoint(86, 160, 0, 60));
+        sWaypoints.add(new Waypoint(17, 160, 0, 10));
 
         return PathBuilder.buildPathFromWaypoints(sWaypoints);
     }

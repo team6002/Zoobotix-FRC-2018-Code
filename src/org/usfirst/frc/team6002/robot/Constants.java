@@ -11,23 +11,33 @@ public class Constants {
 	public static int kRightDriveMasterId = 1;
 	public static int kRightDriveSlaveId = 0;
 	
-	//SHOOTER ID
-	public static int kMasterShooterId = 16;
-	public static int kSlaveShooterId = 17;
-	
 	//INTAKE ID
 	public static int kIntakeSolenoidId = 1;
+	public static int kDeploySolenoidId = 2;
 	public static int kLeftIntakeId = 13;
 	public static int kRightIntakeId = 2;
 	
 	//ELEVATOR ID
-	public static int kClawSolenoidId = 5;
 	public static int kElevatorMasterId = 12; 
 	public static int kElevatorSlaveId = 3;
 	
 	//ARM ID
 	public static int kArmId = 4;
+	public static int kClawSolenoidId = 5;
+	public static int kPistonSolenoidId = 6;// SET TO CORRECT NUMBER
+	public static int kLaserId = 0;
 	
+	//RAMP ID
+	public static int kLeftRampId = 10;
+	public static int kRightRampId = 5;
+	
+	//ELEVATOR PID
+	public static int kElevatorPIDLoopId = 0;
+	public static double kElevatorKf = 0.0;
+	public static double kElevatorKp = 0.37;
+	public static double kElevatorKi = 0.0;
+	public static double kElevatorKd = 0.05;
+		
 	//Arm PID
 	public static int kArmPIDLoopId = 0;
 	public static double kArmKf = 0.0;
@@ -35,21 +45,22 @@ public class Constants {
 	public static double kArmKi = 0.0;
 	public static double kArmKd = 0.0;
 	
-	//ELEVATOR PID
-	public static int kElevatorPIDLoopId = 0;
-	public static double kElevatorKf = 0.0;
-	public static double kElevatorKp = 0.37;
-	public static double kElevatorKi = 0.0;
-	public static double kElevatorKd = 0.0;
+	//RAMP PID
+	public static int kRampPIDLoopId = 0;
+	public static double kRampKf = 0.0;
+	public static double kRampKp = 0.0;
+	public static double kRampKi = 0.0;
+	public static double kRampKd = 0.0;
 	
 	
 	//DRIVE PID
 	public static int kDriveEncTimeoutMs = 10;
 	public static int kDriveTimeoutMs = 0;
+	public static double kDriveVelocityKf = 0.28;
 	public static double kDriveVelocityKp = 0.0;
 	public static double kDriveVelocityKi = 0.0;
 	public static double kDriveVelocityKd = 0.0;
-	public static double kDriveVelocityKf = 1.87362/4;
+	
 	public static int kDriveVelocityIZone = 0;
 	public static double kDriveVelocityRampRate = 0.0;
 	
@@ -70,12 +81,9 @@ public class Constants {
 	
 
 	//Elevator Specs
-	public static double kElevatorDiameterInches = 1.5;
+	public static double kElevatorDiameterInches = 1.66;
 	
-	// Path following constants
-    public static double kPathFollowingLookahead = 24.0; // inches
-    public static double kPathFollowingMaxVel = 120.0; // inches/sec
-    public static double kPathFollowingMaxAccel = 80.0; // inches/sec^2
+	
     
     //Compressor
     public static int kCompressorId = 0;
@@ -106,8 +114,10 @@ public class Constants {
                                                      // our speed
                                                      // in inches per sec
     public static double kSegmentCompletionTolerance = 0.1; // inches
-//    public static double kPathFollowingMaxAccel = 120.0; // inches per second^2
-//    public static double kPathFollowingMaxVel = 120.0; // inches per second
+ // Path following constants
+    public static double kPathFollowingLookahead = 24.0; // inches
+    public static double kPathFollowingMaxVel = 120.0; // inches/sec
+    public static double kPathFollowingMaxAccel = 80.0; // inches/sec^2
     public static double kPathFollowingProfileKp = 5.00;
     public static double kPathFollowingProfileKi = 0.03;
     public static double kPathFollowingProfileKv = 0.02;

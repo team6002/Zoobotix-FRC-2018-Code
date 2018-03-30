@@ -25,7 +25,7 @@ public class Intake extends Subsystem {
     
     //Hardware
 	private TalonSRX mLeftIntake, mRightIntake;
-	private Solenoid mIntakeSolenoid;
+	private Solenoid mIntakeSolenoid, mDeploySolenoid;
 	//Variables
 	boolean IsIntakeOn, IsIntakeExtended;
 	private double INTAKE_ON = 0.5;
@@ -35,6 +35,7 @@ public class Intake extends Subsystem {
 		IsIntakeOn = false;
 		IsIntakeExtended = false;
 		mIntakeSolenoid = new Solenoid(Constants.kIntakeSolenoidId);
+		mDeploySolenoid = new Solenoid(Constants.kDeploySolenoidId);
 		mLeftIntake = new TalonSRX(Constants.kLeftIntakeId);
 		mRightIntake = new TalonSRX(Constants.kRightIntakeId);
 		
@@ -48,6 +49,7 @@ public class Intake extends Subsystem {
 		mRightIntake.set(ControlMode.PercentOutput, 0);
 		
 		mIntakeSolenoid.set(false);
+		mDeploySolenoid.set(false);
 	}
 	
 	private void setOpenLoop(double volt, double volt2) {
@@ -55,9 +57,27 @@ public class Intake extends Subsystem {
 		mRightIntake.set(ControlMode.PercentOutput, volt2);
 	}
 	
+	boolean deployed = false;
+	public void deploy() {
+		deployed = true;
+		mDeploySolenoid.set(true);
+	}
+	public void stow() {
+		deployed = false;
+		mDeploySolenoid.set(false);
+	}
+	public boolean getDeployed() {
+		return deployed;
+	}
+	
 	public void setOn() {
 		IsIntakeOn = true;
-		setOpenLoop(0.7, 0.7);
+		setOpenLoop(0.6, 0.9);
+	}
+	
+	public void spin() {
+		IsIntakeOn = true;
+		setOpenLoop(-0.3, 0.3);
 	}
 	
 	public void setOff() {
@@ -65,11 +85,14 @@ public class Intake extends Subsystem {
 		setOpenLoop(0,0);
 	}
 	
-	public void set(boolean extend) {
-		IsIntakeExtended = extend;
-		mIntakeSolenoid.set(extend);	
+	public void extend() {
+		IsIntakeExtended = true;
+		mIntakeSolenoid.set(true);
 	}
-	
+	public void retract() {
+		IsIntakeExtended = false;
+		mIntakeSolenoid.set(false);
+	}
 	public boolean getIsIntakeExtended() {
 		return IsIntakeExtended;
 	}

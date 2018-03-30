@@ -26,6 +26,6 @@ public class ResetPoseFromPathAction extends RunOnceAction {
     public synchronized void runOnce() {
         RigidTransform2d startPose = mPathContainer.getStartPose();
         RobotState.getInstance().reset(Timer.getFPGATimestamp(), startPose);
-        Drive.getInstance().setGyroAngle(startPose.getRotation());
+//        Drive.getInstance().setGyroAngle(startPose.getRotation());
     }
 }

@@ -30,10 +30,10 @@ public class AutoModeSelector {
     }
 
     private static final AutoModeCreator mDefaultMode = new AutoModeCreator(
-            "Drive forward a distance",
-            () -> new DriveForwardMode());
+            "Center Gear",
+            () -> new CenterGearMode());
     private static final AutoModeCreator[] mAllModes = {
-            new AutoModeCreator("Center Gear", () -> new DriveForwardMode()),
+            new AutoModeCreator("Center Gear", () -> new CenterGearMode()),
             new AutoModeCreator("Auto Drive Test", () -> new AutoDriveTestMode()),
             new AutoModeCreator("Forward", () -> new ForwardMode()),
             new AutoModeCreator("Standstill", () -> new StandStillMode()),

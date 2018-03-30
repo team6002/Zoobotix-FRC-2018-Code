@@ -5,8 +5,10 @@ import org.usfirst.frc.team6002.auto.AutoModeEndedException;
 import org.usfirst.frc.team6002.auto.actions.DrivePathAction;
 import org.usfirst.frc.team6002.auto.actions.ResetPoseFromPathAction;
 import org.usfirst.frc.team6002.auto.actions.WaitAction;
-import org.usfirst.frc.team6002.paths.ForwardSomeDistance;
+import org.usfirst.frc.team6002.paths.CenterGear;
+import org.usfirst.frc.team6002.paths.Forward;
 import org.usfirst.frc.team6002.paths.PathContainer;
+
 
 
 /**
@@ -14,14 +16,14 @@ import org.usfirst.frc.team6002.paths.PathContainer;
  * 
  * @see AutoModeBase
  */
-public class DriveForwardMode extends AutoModeBase {
+public class CenterGearMode extends AutoModeBase {
 
     @Override
     protected void routine() throws AutoModeEndedException {
-        PathContainer gearPath = new ForwardSomeDistance();
-//        runAction(new ResetPoseFromPathAction(gearPath));
-//        runAction(new DrivePathAction(gearPath));
-        runAction(new WaitAction(15));
+        PathContainer gearPath = new CenterGear();
+        runAction(new ResetPoseFromPathAction(gearPath));
+        runAction(new DrivePathAction(gearPath));
+        runAction(new WaitAction(5));
  
     }
 }

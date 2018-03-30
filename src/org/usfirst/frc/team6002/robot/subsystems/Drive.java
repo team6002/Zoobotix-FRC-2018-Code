@@ -27,6 +27,7 @@ import org.usfirst.frc.team6002.robot.loops.Loop;
 
 import edu.wpi.first.wpilibj.Solenoid;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.I2C;
 import edu.wpi.first.wpilibj.SPI;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.command.Subsystem;
@@ -112,7 +113,8 @@ public class Drive extends Subsystem {
     //Hardware
     private TalonSRX leftMaster_, rightMaster_; // leftSlave_, rightSlave_
     private VictorSPX leftVictorSlave_, rightVictorSlave_;
-    private final NavX mNavXBoard;
+//    private final NavX mNavXBoard;
+    private AHRS mNavX; //navx
     private Solenoid shifter_;
     
     //Hardware States
@@ -142,7 +144,8 @@ public class Drive extends Subsystem {
                 setOpenLoop(DriveSignal.NEUTRAL);
                 setBrakeMode(false);
                 setVelocitySetpoint(0, 0);
-                mNavXBoard.reset();
+//                mNavXBoard.reset();
+                mNavX.reset();
             }
         }
 
@@ -186,7 +189,9 @@ public class Drive extends Subsystem {
     	rightMaster_ = new TalonSRX(Constants.kRightDriveMasterId);
         rightVictorSlave_ = new VictorSPX(Constants.kRightDriveSlaveId);
         
-        mNavXBoard = new NavX(SPI.Port.kMXP);
+//        mNavXBoard = new NavX(SPI.Port.kMXP);
+        
+        mNavX = new AHRS(SPI.Port.kMXP);
         shifter_ = new Solenoid(0);
         shifter_.set(false);
         // Get status at 100Hz
@@ -204,12 +209,12 @@ public class Drive extends Subsystem {
      // Set up the encoders
         leftMaster_.configSelectedFeedbackSensor(FeedbackDevice.QuadEncoder, 0, Constants.kDriveEncTimeoutMs);
         leftMaster_.setSensorPhase(true);
-        leftMaster_.setInverted(false);
+        leftMaster_.setInverted(true);
         
-        leftVictorSlave_.setInverted(false);
+        leftVictorSlave_.setInverted(true);
         
         rightMaster_.configSelectedFeedbackSensor(FeedbackDevice.QuadEncoder, 0, Constants.kDriveEncTimeoutMs);
-        rightMaster_.setSensorPhase(false);
+        rightMaster_.setSensorPhase(true);
         rightMaster_.setInverted(false);
 
         rightVictorSlave_.setInverted(false);
@@ -224,18 +229,20 @@ public class Drive extends Subsystem {
         rightMaster_.configNominalOutputReverse(0, Constants.kDriveTimeoutMs);
         rightMaster_.configPeakOutputForward(1, Constants.kDriveTimeoutMs);
         rightMaster_.configPeakOutputReverse(-1, Constants.kDriveTimeoutMs);
-
+        
+        leftMaster_.config_kF(kVelocityControlSlot, Constants.kDriveVelocityKf, 0);
         leftMaster_.config_kP(kVelocityControlSlot, Constants.kDriveVelocityKp, 0);
         leftMaster_.config_kI(kVelocityControlSlot, Constants.kDriveVelocityKi, 0);
         leftMaster_.config_kD(kVelocityControlSlot, Constants.kDriveVelocityKd, 0);
-        leftMaster_.config_kF(kVelocityControlSlot, Constants.kDriveVelocityKf, 0);
+        
         leftMaster_.config_IntegralZone(kVelocityControlSlot, Constants.kDriveVelocityIZone, 0);
         leftMaster_.configClosedloopRamp(Constants.kDriveVelocityRampRate, 0);
-
+        
+        rightMaster_.config_kF(kVelocityControlSlot, Constants.kDriveVelocityKf, 0);
         rightMaster_.config_kP(kVelocityControlSlot, Constants.kDriveVelocityKp, 0);
         rightMaster_.config_kI(kVelocityControlSlot, Constants.kDriveVelocityKi, 0);
         rightMaster_.config_kD(kVelocityControlSlot, Constants.kDriveVelocityKd, 0);
-        rightMaster_.config_kF(kVelocityControlSlot, Constants.kDriveVelocityKf, 0);
+        
         rightMaster_.config_IntegralZone(kVelocityControlSlot, Constants.kDriveVelocityIZone, 0);
         rightMaster_.configClosedloopRamp(Constants.kDriveVelocityRampRate, 0);
 //        velocityHeadingPid_ = new SynchronousPID(Constants.kDriveHeadingVelocityKp, Constants.kDriveHeadingVelocityKi,
@@ -254,7 +261,7 @@ public class Drive extends Subsystem {
     
     protected synchronized void setLeftRightPower(double left, double right) {
         leftMaster_.set(ControlMode.PercentOutput, left);
-        rightMaster_.set(ControlMode.PercentOutput, -right);
+        rightMaster_.set(ControlMode.PercentOutput, right);
     }
     
     /**
@@ -269,12 +276,12 @@ public class Drive extends Subsystem {
         setLeftRightPower(signal.leftMotor, signal.rightMotor);
     }
     
-    public synchronized Rotation2d getGyroAngle() {
-        return mNavXBoard.getYaw();
-    }
-    public synchronized double getGyroVelocityDegreesPerSec() {
-        return mNavXBoard.getYawRateDegreesPerSec();
-    }
+//    public synchronized Rotation2d getGyroAngle() {
+//        return mNavXBoard.getYaw();
+//    }
+//    public synchronized double getGyroVelocityDegreesPerSec() {
+//        return mNavXBoard.getYawRateDegreesPerSec();
+//    }
     
     /**
      * Start up velocity mode. This sets the drive train in high gear as well.
@@ -311,7 +318,7 @@ public class Drive extends Subsystem {
     /**
      * Turn the robot to a target heading.
      * 
-     * Is called periodically when the robot is auto-aiming towards the boiler.
+     * 
      */
     private void updateTurnToHeading(double timestamp) {
         final Rotation2d field_to_robot = mRobotState.getLatestFieldToVehicle().getValue().getRotation();
@@ -410,24 +417,10 @@ public class Drive extends Subsystem {
             System.out.println("Robot is not in path following mode");
         }
     }
-    
-    double target = 12.0;
-    public synchronized void handlePrepareToDeploy(double distance, boolean done) {
-    	if (done) {
-    		if(distance > target) { //move towards distance sensor; backwards
-    			
-    		}else if (distance < target) { // move away from distance sensor; forwards
-    			
-    		}else {// on target!
-    			
-    		}
-    	}
-    	
-    }
-    
+        
     public void setMotors(double speed, double speed2){
     	leftMaster_.set(ControlMode.PercentOutput, speed);
-    	rightMaster_.set(ControlMode.PercentOutput, -speed2);
+    	rightMaster_.set(ControlMode.PercentOutput, speed2);
     }
     /**
      * Path Markers are an optional functionality that name the various
@@ -455,11 +448,11 @@ public class Drive extends Subsystem {
     private void configureTalonsForSpeedControl() {
         if (driveControlState_ != DriveControlState.VELOCITY_SETPOINT) {
             leftMaster_.set(ControlMode.Velocity, 0);
-//            leftMaster_.setProfile(kVelocityControlSlot);
-//            leftMaster_.setAllowableClosedLoopErr(Constants.kDriveVelocityAllowableError);
+            leftMaster_.selectProfileSlot(kVelocityControlSlot, 0);
+//            leftMaster_.configAllowableClosedLoopErr(Constants.kDriveVelocityAllowableError);
             rightMaster_.set(ControlMode.Velocity, 0);
-//            rightMaster_.setProfile(kVelocityControlSlot);
-//            rightMaster_.setAllowableClosedLoopErr(Constants.kDriveVelocityAllowableError);
+            rightMaster_.selectProfileSlot(kVelocityControlSlot, 0);
+//            rightMaster_.configAllowableClosedLoopErr(Constants.kDriveVelocityAllowableError);
 //            setHighGear(true);
             setBrakeMode(true);
         }
@@ -514,28 +507,103 @@ public class Drive extends Subsystem {
             isBrakeMode_ = on;
         }
     }
-    /**
-     * VelocityHeadingSetpoints are used to calculate the robot's path given the
-     * speed of the robot in each wheel and the polar coordinates. Especially
-     * useful if the robot is negotiating a turn and to forecast the robot's
-     * location.
-     */
+
     
 	protected void initDefaultCommand() {
 		// TODO Auto-generated method stub
 		
 	}
-
-	public synchronized void setGyroAngle(Rotation2d angle) {
-	        mNavXBoard.reset();
-	        mNavXBoard.setAngleAdjustment(angle);
-	}
+	
+	// functions for simple autonomous
+	public void driveSetInches(int distance, double desiredSpeed){
+    	double desiredEncoderTicks = distance / ((6*3.14)/4096);
+    	double speed = desiredSpeed;
+    	double minimumSpeed = 0.2;
+    	double slowDownPoint = 13000; // within about 26 inches, start slow down
+    	double gyroAdjustmentFactor = 0.045;
+    	double gyroAdjustment = 0;
+    	mNavX.zeroYaw();
+    	resetEncoders();
+    	double currentPosition = rightMaster_.getSelectedSensorPosition(0);
+    	if(distance > 0){
+    		//move forward
+    		while(currentPosition < desiredEncoderTicks){
+    			if(desiredEncoderTicks-currentPosition < slowDownPoint){
+    				speed = desiredSpeed*((desiredEncoderTicks-currentPosition) / slowDownPoint);
+    				if(speed < minimumSpeed){
+    					speed = minimumSpeed;
+    				}
+    			}
+    			gyroAdjustment = mNavX.getAngle() * gyroAdjustmentFactor;
+    			System.out.println("Current:" + currentPosition + " Target:" + desiredEncoderTicks + " Speed:" + speed + " Correction" + gyroAdjustment 
+    					+ "speed + gyroAdjustment" + (speed + gyroAdjustment));
+    			setMotors(speed, speed - gyroAdjustment);
+    			currentPosition = rightMaster_.getSelectedSensorPosition(0);
+    		}
+    	}
+    	else {
+    		//move backwards
+    		while(currentPosition > desiredEncoderTicks){
+    			if(currentPosition - desiredEncoderTicks < slowDownPoint){
+    				speed = desiredSpeed*((currentPosition - desiredEncoderTicks) / slowDownPoint);
+    				if(speed < minimumSpeed){
+    					speed = minimumSpeed;
+    				}
+    			}
+    			System.out.println("Current:" + currentPosition + " Target:" + desiredEncoderTicks + " Speed:" + speed);
+    			setMotors(-speed, -speed);
+    			currentPosition = rightMaster_.getSelectedSensorPosition(0);
+    		}
+    	}
+    	setMotors(0.0, 0.0);
+    	System.out.println("Current:" + currentPosition + " Target:" + desiredEncoderTicks + " Speed:" + speed);
+    	System.out.println("Complete!");	
+    }
+	public void gyroTurn(double targetAngle){
+    	mNavX.zeroYaw();
+    	double desiredSpeed = 0.3;
+    	double speed = desiredSpeed;
+    	double minimumSpeed = 0.3;
+    	double currentAngle = mNavX.getAngle();
+    	double slowDownPoint = 30;// within 25 degrees, slow down
+    	if(targetAngle > 0){
+    		while(currentAngle < targetAngle){
+    			if(targetAngle - currentAngle < slowDownPoint){
+    				speed = desiredSpeed*((targetAngle - currentAngle) / slowDownPoint);
+    				if(speed < minimumSpeed) speed = minimumSpeed;
+    			}
+    			setMotors(-speed, speed);
+    			currentAngle = mNavX.getAngle();
+    			System.out.println("CurrentAngle:" + currentAngle + " TargetAngle:" + targetAngle + " Speed:" + speed);
+			}
+    	}else{
+    		while(currentAngle > targetAngle){
+    			if(currentAngle - targetAngle < slowDownPoint){
+    				speed = desiredSpeed*((currentAngle - targetAngle ) / slowDownPoint) ;
+    				if(speed < minimumSpeed) speed = minimumSpeed;
+    			}
+    			setMotors(speed, -speed);
+    			currentAngle = mNavX.getAngle();
+    			System.out.println("CurrentAngle:" + currentAngle + " TargetAngle:" + targetAngle + " Speed:" + speed);
+    		}
+		}
+    	setMotors(0.0, 0.0);
+    	System.out.println("Final CurrentAngle:" + currentAngle + " TargetAngle:" + targetAngle + " Speed:" + speed);
+    }
+	
+//	public synchronized void setGyroAngle(Rotation2d angle) {
+//	        mNavXBoard.reset();
+//	        mNavXBoard.setAngleAdjustment(angle);
+//	}
 	
 	public void OutputToSmartDashboard() {
 		final double left_speed = getLeftVelocityInchesPerSec();
         final double right_speed = getRightVelocityInchesPerSec();
 		SmartDashboard.putNumber("left speed", left_speed);
 		SmartDashboard.putNumber("right speed", right_speed);
+		SmartDashboard.putNumber("left speed (ips)", left_speed);
+        SmartDashboard.putNumber("right speed (ips)", right_speed);
+		
 		synchronized (this) {
             if (mDriveControlState == DriveControlState.PATH_FOLLOWING && mPathFollower != null) {
                 SmartDashboard.putNumber("drive CTE", mPathFollower.getCrossTrackError());
@@ -547,8 +615,11 @@ public class Drive extends Subsystem {
         }
         SmartDashboard.putNumber("left position (rotations)", leftMaster_.getSelectedSensorPosition(0));
         SmartDashboard.putNumber("right position (rotations)", rightMaster_.getSelectedSensorPosition(0));
-        SmartDashboard.putNumber("gyro vel", getGyroVelocityDegreesPerSec());
-        SmartDashboard.putNumber("gyro pos", getGyroAngle().getDegrees());
+//        SmartDashboard.putNumber("gyro vel", getGyroVelocityDegreesPerSec());
+//        SmartDashboard.putNumber("gyro pos", getGyroAngle().getDegrees());
+        SmartDashboard.putBoolean( "IMU_Connected", mNavX.isConnected());
+        SmartDashboard.putBoolean("IMU_Calibrating", mNavX.isCalibrating());
+        SmartDashboard.putNumber("gyro pos", mNavX.getAngle());
         SmartDashboard.putBoolean("drive on target", isOnTarget());
 
 	}
